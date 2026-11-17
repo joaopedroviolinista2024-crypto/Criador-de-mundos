@@ -1,1 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criador de Mundos de Fantasia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.3/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        fantasy: {
+                            50: '#fdf4f5',
+                            100: '#fbe8eb',
+                            500: '#e11d48',
+                            600: '#be123c',
+                            750: '#1e1b2e',
+                            800: '#151321',
+                            900: '#0b0a10',
+                            950: '#050508'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #151321; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3730a3; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
+    </style>
+</head>
+<body class="bg-fantasy-950 text-slate-100 min-h-screen font-sans selection:bg-rose-500 selection:text-white" x-data="worldBuilder()">
+
+    <!-- App Header -->
+    <header class="bg-fantasy-900 border-b border-rose-900/30 sticky top-0 z-50 backdrop-blur-md bg-opacity-9 postaci-header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-600 to-indigo-900 flex items-center justify-center shadow-lg shadow-rose-900/20">
+                    <i class="fa-solid fa-earth-americas text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-indigo-300" x-text="world.name || 'Meu Mundo de Fantasia'"></h1>
+                    <p class="text-xs text-slate-400">Criador de Universos</p>
+                </div>
+            </div>
+
+            <!-- Global Actions -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button @click="exportData()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-download text-indigo-400"></i>
+                    <span class="hidden sm:inline">Exportar</span>
+                </button>
+                <label class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center space-x-1.5 cursor-pointer">
+                    <i class="fa-solid fa-upload text-rose-400"></i>
+                    <span class="hidden sm:inline">Importar</span>
+                    <input type="file" @change="importData($event)" accept=".json" class="hidden">
+                </label>
+                <button @click="resetWorld()" class="px-3 py-1.5 text-xs font-medium bg-rose-950/50 hover:bg-rose-900/50 text-rose-300 rounded-lg border border-rose-900/50 transition flex items-center space-x-1.5" title="Novo Mundo">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span class="hidden sm:inline">Novo</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="bg-fantasy-900/60 border-b border-slate-800 sticky top-16 z-40 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex space-x-1 overflow-x-auto py-2 custom-scrollbar">
+                <template x-for="tab in tabs" :key="tab.id">
+                    <button @click="currentTab = tab.id"
+                        :class="currentTab === tab.id ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'"
+                        class="px-4 py-2 rounded-lg text-sm transition whitespace-nowrap flex items-center space-x-2">
+                        <i :class="tab.icon"></i>
+                        <span x-text="tab.name"></span>
+                        <span class="ml-1.5 px-1.5 py-0.5 text-xs rounded-full" 
+                              :class="currentTab === tab.id ? 'bg-rose-700 text-white' : 'bg-slate-800 text-slate-400'"
+                              x-text="getCount(tab.id)"></span>
+                    </button>
+                </template>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB: VISÃO GERAL -->
+        <div x-show="currentTab === 'overview'" class="space-y-6">
+            <div class="bg-fantasy-800 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-rose-600/5 rounded-full blur-3xl pointer-events-none"></div>
+                <h2 class="text-xl font-bold text-rose-400 mb-4 flex items-center space-x-2">
+                    <i class="fa-solid fa-compass"></i>
+                    <span>Painel do Criador de Mundos</span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Nome do Mundo</label>
+                        <input type="text" x-model="world.name" placeholder="Ex: Eldoria, Valinor..." class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-rose-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Gênero / Estilo</label>
+                        <input type="text" x-model="world.genre" placeholder="Ex: Alta Fantasia, Dark Fantasy, Steampunk..." class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-rose-500 transition">
+                    </div>
+                    <div class="md:col-span-2">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-semibold uppercase text-slate-400">Resumo / Premissa Geral</label>
+                            <button @click="generateWorldOverview()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center space-x-1 font-medium transition">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>Gerar Ideia Rápida</span>
+                            </button>
+                        </div>
+                        <textarea x-model="world.description" rows="4" placeholder="Descreva a história básica, o tom e os conflitos centrais do seu universo..." class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-rose-500 transition custom-scrollbar"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                <template x-for="tab in tabs.filter(t => t.id !== 'overview')" :key="tab.id">
+                    <div @click="currentTab = tab.id" class="bg-fantasy-800/60 hover:bg-fantasy-800 border border-slate-800 hover:border-slate-700 p-4 rounded-xl cursor-pointer transition text-center group">
+                        <div class="w-10 h-10 mx-auto rounded-lg bg-fantasy-900 flex items-center justify-center text-rose-400 mb-2 group-hover:scale-110 transition">
+                            <i :class="tab.icon"></i>
+                        </div>
+                        <div class="text-xl font-bold text-slate-100" x-text="getCount(tab.id)"></div>
+                        <div class="text-xs text-slate-400 mt-1" x-text="tab.name"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- GENERIC CATEGORY TEMPLATE -->
+        <template x-for="tab in tabs.filter(t => t.id !== 'overview')" :key="tab.id">
+            <div x-show="currentTab === tab.id" class="space-y-6">
+                <!-- Header with Add & Generator -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-fantasy-800 border border-slate-800 p-5 rounded-2xl">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center space-x-2">
+                            <i :class="tab.icon + ' text-rose-500'"></i>
+                            <span x-text="tab.name"></span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1" x-text="getCategorySubtitle(tab.id)"></p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button @click="quickGenerate(tab.id)" class="px-4 py-2 bg-indigo-900/60 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/50 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                            <i class="fa-solid fa-dice text-indigo-400"></i>
+                            <span>Gerar Aleatório</span>
+                        </button>
+                        <button @click="openModal(tab.id)" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-rose-600/20 transition flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Adicionar Novo</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filter Bar -->
+                <div class="flex items-center space-x-3">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-500 text-sm"></i>
+                        <input type="text" x-model="searchQueries[tab.id]" :placeholder="'Pesquisar em ' + tab.name + '...'" class="w-full bg-fantasy-800/80 border border-slate-800 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-rose-500 transition">
+                    </div>
+                </div>
+
+                <!-- Items Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <template x-for="item in getFilteredItems(tab.id)" :key="item.id">
+                        <div class="bg-fantasy-800 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 flex flex-col justify-between transition group shadow-lg">
+                            <div>
+                                <div class="flex items-start justify-between gap-3 mb-3">
+                                    <h3 class="font-bold text-base text-slate-100 group-hover:text-rose-400 transition" x-text="item.name || 'Sem Nome'"></h3>
+                                    <span class="px-2.5 py-0.5 text-xs rounded-full bg-fantasy-900 border border-slate-700 text-slate-300 whitespace-nowrap" x-text="item.tag || tab.name"></span>
+                                </div>
+                                <p class="text-xs text-slate-300 line-clamp-4 leading-relaxed mb-4 whitespace-pre-line" x-text="item.description || 'Nenhuma descrição fornecida.'"></p>
+                                
+                                <!-- Secondary attributes display -->
+                                <template x-if="item.subDetails">
+                                    <div class="bg-fantasy-900/70 rounded-xl p-3 mb-4 space-y-1.5 border border-slate-800/60 text-xs">
+                                        <template x-for="(val, key) in item.subDetails" :key="key">
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-400 uppercase font-medium" x-text="key + ':'"></span>
+                                                <span class="text-slate-200 font-semibold text-right" x-text="val"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Card Actions -->
+                            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800/80">
+                                <button @click="editItem(tab.id, item)" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition flex items-center space-x-1">
+                                    <i class="fa-solid fa-pen text-slate-400"></i>
+                                    <span>Editar</span>
+                                </button>
+                                <button @click="deleteItem(tab.id, item.id)" class="px-3 py-1.5 bg-rose-950/30 hover:bg-rose-900/50 text-rose-400 rounded-lg text-xs font-medium transition flex items-center space-x-1">
+                                    <i class="fa-solid fa-trash"></i>
+                                    <span>Excluir</span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Empty State -->
+                <template x-if="getFilteredItems(tab.id).length === 0">
+                    <div class="bg-fantasy-800/40 border border-dashed border-slate-800 rounded-2xl p-12 text-center">
+                        <div class="w-16 h-16 mx-auto rounded-full bg-fantasy-800 flex items-center justify-center text-slate-500 text-2xl mb-4">
+                            <i :class="tab.icon"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-slate-300 mb-1">Nenhum registro encontrado</h3>
+                        <p class="text-xs text-slate-500 mb-4">Comece adicionando manualmente ou gere um conteúdo aleatório instantâneo.</p>
+                        <div class="flex justify-center space-x-3">
+                            <button @click="quickGenerate(tab.id)" class="px-4 py-2 bg-indigo-900/60 hover:bg-indigo-900 text-indigo-200 rounded-xl text-xs font-medium transition">Gerar com IA / Aleatório</button>
+                            <button @click="openModal(tab.id)" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition">Criar Novo</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </main>
+
+    <!-- EDIT / CREATE MODAL -->
+    <div x-show="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+        <div class="bg-fantasy-800 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" @click.away="closeModal()">
+            <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between bg-fantasy-900">
+                <h3 class="font-bold text-slate-100 flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-nib text-rose-500"></i>
+                    <span x-text="modalItem.id ? 'Editar Registro' : 'Novo Registro'"></span>
+                </h3>
+                <button @click="closeModal()" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nome / Título</label>
+                    <input type="text" x-model="modalItem.name" placeholder="Ex: Excalibur, Castelo de Gelo..." class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-rose-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Categoria / Rótulo</label>
+                    <input type="text" x-model="modalItem.tag" placeholder="Ex: Humano, Lendário, Reino..." class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-rose-500">
+                </div>
+                
+                <!-- Dynamic fields based on category -->
+                <template x-if="activeCategory === 'characters'">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Raça</label>
+                            <input type="text" x-model="modalItem.subDetails['Raça']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Papel</label>
+                            <input type="text" x-model="modalItem.subDetails['Papel']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                    </div>
+                </template>
+                <template x-if="activeCategory === 'locations'">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Região</label>
+                            <input type="text" x-model="modalItem.subDetails['Região']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Clima / Tipo</label>
+                            <input type="text" x-model="modalItem.subDetails['Tipo']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                    </div>
+                </template>
+                <template x-if="activeCategory === 'magic'">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Origem</label>
+                            <input type="text" x-model="modalItem.subDetails['Origem']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Raridade</label>
+                            <input type="text" x-model="modalItem.subDetails['Raridade']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                    </div>
+                </template>
+                <template x-if="activeCategory === 'equipment'">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Tipo de Item</label>
+                            <input type="text" x-model="modalItem.subDetails['Tipo']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Poder / Efeito</label>
+                            <input type="text" x-model="modalItem.subDetails['Poder']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                    </div>
+                </template>
+                <template x-if="activeCategory === 'monsters'">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Habitat</label>
+                            <input type="text" x-model="modalItem.subDetails['Habitat']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Periculosidade</label>
+                            <input type="text" x-model="modalItem.subDetails['Perigo']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                    </div>
+                </template>
+                <template x-if="activeCategory === 'lore'">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Era / Período</label>
+                            <input type="text" x-model="modalItem.subDetails['Era']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Impacto</label>
+                            <input type="text" x-model="modalItem.subDetails['Impacto']" class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500">
+                        </div>
+                    </div>
+                </template>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Descrição Completa</label>
+                    <textarea x-model="modalItem.description" rows="4" placeholder="Detalhes, história, características..." class="w-full bg-fantasy-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-rose-500 custom-scrollbar"></textarea>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-fantasy-900 border-t border-slate-700 flex justify-end space-x-3">
+                <button @click="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition">Cancelar</button>
+                <button @click="saveItem()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition">Salvar Registro</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function worldBuilder() {
+            return {
+                currentTab: 'overview',
+                world: {
+                    name: 'Eldoria: O Despertar das Sombras',
+                    genre: 'Alta Fantasia Épica',
+                    description: 'Um mundo onde civilizações antigas disputam os fragmentos de uma lua estilhaçada que caiu sobre o continente milênios atrás.'
+                },
+                tabs: [
+                    { id: 'overview', name: 'Visão Geral', icon: 'fa-solid fa-earth-americas' },
+                    { id: 'characters', name: 'Personagens', icon: 'fa-solid fa-users' },
+                    { id: 'locations', name: 'Locais', icon: 'fa-solid fa-map-location-dot' },
+                    { id: 'magic', name: 'Magia & Relíquias', icon: 'fa-solid fa-wand-sparkles' },
+                    { id: 'equipment', name: 'Equipamentos', icon: 'fa-solid fa-shield-halved' },
+                    { id: 'monsters', name: 'Monstros', icon: 'fa-solid fa-dragon' },
+                    { id: 'lore', name: 'História & Lore', icon: 'fa-solid fa-book-atlas' }
+                ],
+                data: {
+                    characters: [
+                        { id: 1, name: 'Lyra Solaria', tag: 'Protagonista', description: 'Uma jovem maga errante capaz de manipular chamas estelares.', subDetails: { 'Raça': 'Humana', 'Papel': 'Maga' } },
+                        { id: 2, name: 'Thorgar Punho de Ferro', tag: 'Aliado', description: 'Veterano das Guerras das Montanhas, mestre em forja e combate pesado.', subDetails: { 'Raça': 'Anão', 'Papel': 'Guerreiro' } }
+                    ],
+                    locations: [
+                        { id: 1, name: 'Cidadela de Aethelgard', tag: 'Capital', description: 'Imponente cidade construída nas encostas de uma montanha flutuante.', subDetails: { 'Região': 'Vales do Norte', 'Tipo': 'Fortaleza' } }
+                    ],
+                    magic: [
+                        { id: 1, name: 'Grimório de Alastor', tag: 'Relíquia', description: 'Livro místico cujas páginas mudam de acordo com os segredos que o leitor descobre.', subDetails: { 'Origem': 'Primeira Era', 'Raridade': 'Lendário' } }
+                    ],
+                    equipment: [
+                        { id: 1, name: 'Lâmina do Crepúsculo', tag: 'Arma', description: 'Espada mágica que absorve a luz ao seu redor e desfere golpes gélidos.', subDetails: { 'Tipo': 'Espada Longa', 'Poder': 'Dano de Gelo' } }
+                    ],
+                    monsters: [
+                        { id: 1, name: 'Serpente das Brumas', tag: 'Fera', description: 'Criatura colossal que habita os oceanos de névoa e ataca embarcações.', subDetails: { 'Habitat': 'Mares de Névoa', 'Perigo': 'Extremo' } }
+                    ],
+                    lore: [
+                        { id: 1, name: 'A Queda da Lua de Cristal', tag: 'Evento', description: 'O dia em que o satélite natural se rompeu, banhando o mundo em energia mágica bruta.', subDetails: { 'Era': 'Ano 0 da Era Pós-Queda', 'Impacto': 'Global' } }
+                    ]
+                },
+                searchQueries: {
+                    characters: '',
+                    locations: '',
+                    magic: '',
+                    equipment: '',
+                    monsters: '',
+                    lore: ''
+                },
+                isModalOpen: false,
+                activeCategory: '',
+                modalItem: { id: null, name: '', tag: '', description: '', subDetails: {} },
+
+                init() {
+                    const saved = localStorage.getItem('fantasy_world_creator_data');
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            this.world = parsed.world || this.world;
+                            this.data = parsed.data || this.data;
+                        } catch(e) { console.error("Erro ao carregar dados salvos"); }
+                    }
+                    this.$watch('data', () => this.saveToLocalStorage(), { deep: true });
+                    this.$watch('world', () => this.saveToLocalStorage(), { deep: true });
+                },
+
+                saveToLocalStorage() {
+                    localStorage.setItem('fantasy_world_creator_data', JSON.stringify({ world: this.world, data: this.data }));
+                },
+
+                getCount(tabId) {
+                    if(tabId === 'overview') return '';
+                    return this.data[tabId] ? this.data[tabId].length : 0;
+                },
+
+                getCategorySubtitle(tabId) {
+                    const subtitles = {
+                        characters: 'Gerencie heróis, vilões, deuses e NPCs do seu universo.',
+                        locations: 'Reinos, cidades, masmorras, tavernas e pontos de interesse.',
+                        magic: 'Sistemas de magia, feitiços arcanos, artefatos sagrados e maldições.',
+                        equipment: 'Armas lendárias, armaduras, poções e itens tecnológicos ou místicos.',
+                        monsters: 'Feras colossais, criaturas fantásticas e monstros perigosos.',
+                        lore: 'Lendas, eras históricas, facções, guerras e mitos de origem.'
+                    };
+                    return subtitles[tabId] || '';
+                },
+
+                getFilteredItems(tabId) {
+                    if (!this.data[tabId]) return [];
+                    const q = (this.searchQueries[tabId] || '').toLowerCase();
+                    if (!q) return this.data[tabId];
+                    return this.data[tabId].filter(item => 
+                        (item.name && item.name.toLowerCase().includes(q)) ||
+                        (item.description && item.description.toLowerCase().includes(q)) ||
+                        (item.tag && item.tag.toLowerCase().includes(q))
+                    );
+                },
+
+                openModal(tabId, item = null) {
+                    this.activeCategory = tabId;
+                    if (item) {
+                        this.modalItem = JSON.parse(JSON.stringify(item));
+                    } else {
+                        let defaultSub = {};
+                        if(tabId === 'characters') defaultSub = { 'Raça': 'Humano', 'Papel': 'Aventureiro' };
+                        if(tabId === 'locations') defaultSub = { 'Região': 'Desconhecida', 'Tipo': 'Assentamento' };
+                        if(tabId === 'magic') defaultSub = { 'Origem': 'Antiga', 'Raridade': 'Raro' };
+                        if(tabId === 'equipment') defaultSub = { 'Tipo': 'Equipamento', 'Poder': 'Comum' };
+                        if(tabId === 'monsters') defaultSub = { 'Habitat': 'Selvagem', 'Perigo': 'Moderado' };
+                        if(tabId === 'lore') defaultSub = { 'Era': 'Antiguidade', 'Impacto': 'Regional' };
+
+                        this.modalItem = { id: null, name: '', tag: '', description: '', subDetails: defaultSub };
+                    }
+                    this.isModalOpen = true;
+                },
+
+                closeModal() {
+                    this.isModalOpen = false;
+                },
+
+                editItem(tabId, item) {
+                    this.openModal(tabId, item);
+                },
+
+                saveItem() {
+                    if (!this.modalItem.name.trim()) return;
+                    if (!this.data[this.activeCategory]) this.data[this.activeCategory] = [];
+
+                    if (this.modalItem.id) {
+                        const index = this.data[this.activeCategory].findIndex(i => i.id === this.modalItem.id);
+                        if (index !== -1) {
+                            this.data[this.activeCategory][index] = JSON.parse(JSON.stringify(this.modalItem));
+                        }
+                    } else {
+                        this.modalItem.id = Date.now();
+                        this.data[this.activeCategory].push(JSON.parse(JSON.stringify(this.modalItem)));
+                    }
+                    this.closeModal();
+                },
+
+                deleteItem(tabId, id) {
+                    if (confirm('Tem certeza que deseja excluir este registro?')) {
+                        this.data[tabId] = this.data[tabId].filter(i => i.id !== id);
+                    }
+                },
+
+                quickGenerate(tabId) {
+                    const generators = {
+                        characters: [
+                            { name: 'Kaelen, o Andarilho das Cinzas', tag: 'Mercenário', description: 'Um espadachim enigmático com cicatrizes rúnicas que busca vingança contra uma ordem caída.', subDetails: { 'Raça': 'Meio-Elfo', 'Papel': 'Guerreiro' } },
+                            { name: 'Sariel, A Voz dos Ventos', tag: 'Sacerdotisa', description: 'Oráculo cega capaz de ouvir sussurros do plano espiritual através das rajadas de vento.', subDetails: { 'Raça': 'Elfa', 'Papel': 'Oráculo' } }
+                        ],
+                        locations: [
+                            { name: 'Templo Submerso de Thalor', tag: 'Ruínas', description: 'Santuário esquecido no fundo de um lago cristalino, guardando segredos de uma civilização aquática.', subDetails: { 'Região': 'Pantanal Sombrio', 'Tipo': 'Templo' } },
+                            { name: 'Pico do Dragão Dormente', tag: 'Montanha', description: 'Vulcão extinto onde dizem que o primeiro ancestral dracônico repousa em sono eterno.', subDetails: { 'Região': 'Cordilheira Alta', 'Tipo': 'Montanha' } }
+                        ],
+                        magic: [
+                            { name: 'Chama do Fênix Eterna', tag: 'Magia Elemental', description: 'Feitiço de alto nível que consome a energia vital do conjurador para curar ferimentos fatais.', subDetails: { 'Origem': 'Magia Solar', 'Raridade': 'Épico' } },
+                            { name: 'Olho do Abismo', tag: 'Artefato', description: 'Esfera de obsidiana que permite enxergar através de ilusões e fendas dimensionais.', subDetails: { 'Origem': 'Dimensão Sombria', 'Raridade': 'Lendário' } }
+                        ],
+                        equipment: [
+                            { name: 'Arco das Mil Flechas Estelares', tag: 'Arma Longa', description: 'Arco que conjura flechas de pura luz estelar quando tensionado sem munição física.', subDetails: { 'Tipo': 'Arco Élfico', 'Poder': 'Dano Radiante' } },
+                            { name: 'Manto da Invisibilidade Espectral', tag: 'Vestimenta', description: 'Tecido tecido com fios de sombras que oculta completamente o usuário na penumbra.', subDetails: { 'Tipo': 'Capa Mágica', 'Poder': 'Ocultação' } }
+                        ],
+                        monsters: [
+                            { name: 'Gárgula de Ferro Corrompido', tag: 'Construto', description: 'Estátua animada por magia negra que protege entradas de criptas ancestrais.', subDetails: { 'Habitat': 'Masmorras', 'Perigo': 'Alto' } },
+                            { name: 'Lorde das Profundezas', tag: 'Aberração', description: 'Criatura tentacular com múltiplos olhos que habita cavernas subterrâneas e drena energias.', subDetails: { 'Habitat': 'Subterrâneo', 'Perigo': 'Letal' } }
+                        ],
+                        lore: [
+                            { name: 'O Grande Cataclismo das Fogueiras', tag: 'Guerra', description: 'Conflito secular entre os reinos da superfície e os clãs subterrâneos pelo controle das fontes de mana.', subDetails: { 'Era': 'Segunda Era', 'Impacto': 'Devastador' } }
+                        ]
+                    };
+
+                    const list = generators[tabId];
+                    if (list && list.length > 0) {
+                        const randomItem = list[Math.floor(Math.random() * list.length)];
+                        const newItem = JSON.parse(JSON.stringify(randomItem));
+                        newItem.id = Date.now();
+                        if (!this.data[tabId]) this.data[tabId] = [];
+                        this.data[tabId].push(newItem);
+                    }
+                },
+
+                generateWorldOverview() {
+                    const names = ['Aethelgard', 'Valoria', 'Myth Drannor', 'Eldoria', 'Solaria', 'Noxheim'];
+                    const genres = ['Alta Fantasia', 'Dark Fantasy', 'Fantasia Urbana', 'Steampunk Místico', 'Espada e Magia'];
+                    const plots = [
+                        'Um eclipse eterno ameaça extinguir a última fonte de calor e luz do continente.',
+                        'Os selos mágicos que aprisionavam deuses antigos começam a ruir um a um.',
+                        'Uma facção misteriosa está caçando todos os portadores de magia arcana.'
+                    ];
+                    this.world.name = names[Math.floor(Math.random() * names.length)];
+                    this.world.genre = genres[Math.floor(Math.random() * genres.length)];
+                    this.world.description = plots[Math.floor(Math.random() * plots.length)];
+                },
+
+                exportData() {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ world: this.world, data: this.data }, null, 2));
+                    const dlAnchorElem = document.createElement('a');
+                    dlAnchorElem.setAttribute("href", dataStr);
+                    dlAnchorElem.setAttribute("download", (this.world.name || 'mundo_fantasia').toLowerCase().replace(/\s+/g, '_') + "_backup.json");
+                    document.body.appendChild(dlAnchorElem);
+                    dlAnchorElem.click();
+                    dlAnchorElem.remove();
+                },
+
+                importData(event) {
+                    const fileReader = new FileReader();
+                    if (event.target.files[0]) {
+                        fileReader.readAsText(event.target.files[0], "UTF-8");
+                        fileReader.onload = (e) => {
+                            try {
+                                const parsed = JSON.parse(e.target.result);
+                                if (parsed.world && parsed.data) {
+                                    this.world = parsed.world;
+                                    this.data = parsed.data;
+                                    alert('Mundo importado com sucesso!');
+                                } else {
+                                    alert('Arquivo inválido.');
+                                }
+                            } catch(err) {
+                                alert('Erro ao ler o arquivo JSON.');
+                            }
+                        };
+                    }
+                },
+
+                resetWorld() {
+                    if (confirm('Deseja iniciar um novo mundo do zero? Todos os dados atuais serão limpos.')) {
+                        localStorage.removeItem('fantasy_world_creator_data');
+                        location.reload();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
 
